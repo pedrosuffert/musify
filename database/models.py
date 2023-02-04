@@ -39,3 +39,10 @@ class Artist(Base):
     name: StrColumn = Column(String, nullable=False)
     birth_date: DateColumn = Column(DateTime, nullable=False, default=datetime.utcnow)
     photo: BinaryColumn = Column(LargeBinary, nullable=False)
+    
+class Artist(Base):
+    __tablename__ = "genres"
+
+    id: IntColumn = Column(Integer, primary_key=True, autoincrement=True)
+    name: StrColumn = Column(String, nullable=False)
+    description: StrColumn = Column(String, nullable=False)

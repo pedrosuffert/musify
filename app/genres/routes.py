@@ -1,4 +1,4 @@
 from fastapi import APIRouter
 
 
-music_router = APIRouter(prefix="/musics")
+music_router = APIRouter(prefix="/genres")
