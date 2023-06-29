@@ -21,8 +21,12 @@ class Music(Base):
     lyrics: StrColumn = Column(String)
     language: StrColumn = Column(String)
     clip: BinaryColumn = Column(LargeBinary)
-    artist_id: IntColumn = Column(Integer, ForeignKey("artists.id"), nullable=False)
-    album_id: IntColumn = Column(Integer, ForeignKey("albums.id"), nullable=False)
+    artist_id: IntColumn = Column(
+        Integer, ForeignKey("artists.id", ondelete="CASCADE"), nullable=False
+    )
+    album_id: IntColumn = Column(
+        Integer, ForeignKey("albums.id", ondelete="CASCADE"), nullable=False
+    )
 
     artist: "Artist" = relationship("Artist", back_populates="musics")
     album: "Album" = relationship("Album", back_populates="musics")
@@ -44,18 +48,24 @@ class Artist(Base):
 
     id: IntColumn = Column(Integer, primary_key=True, autoincrement=True)
     name: StrColumn = Column(String, nullable=False)
-    birth_date: DateColumn = Column(DateTime, nullable=False, default=datetime.utcnow)
-    photo: BinaryColumn = Column(LargeBinary)
+    birth_date: DateColumn = Column(
+        DateTime, nullable=False, default=datetime.isoformat(datetime.utcnow())
+    )
+    photo: StrColumn = Column(String)
 
-    albums: List["Album"] = relationship("Album")
-    musics: List["Music"] = relationship("Music")
+    albums: List["Album"] = relationship(
+        "Album", back_populates="artist", cascade="all, delete-orphan"
+    )
+    musics: List["Music"] = relationship(
+        "Music", back_populates="artist", cascade="all, delete-orphan"
+    )
 
     def as_json(self) -> dict:
         return {
             "id": self.id,
             "name": self.name,
             "birth_date": self.birth_date,
-            "photo": self.photo,
+            "photo": self.photo.title() if self.photo else None,
         }
 
 
@@ -64,12 +74,18 @@ class Album(Base):
 
     id: IntColumn = Column(Integer, primary_key=True, autoincrement=True)
     name: StrColumn = Column(String)
-    release_date: DateColumn = Column(DateTime, nullable=False, default=datetime.utcnow)
+    release_date: DateColumn = Column(
+        DateTime, nullable=False, default=datetime.isoformat(datetime.utcnow())
+    )
     cover: BinaryColumn = Column(LargeBinary)
-    artist_id = Column(Integer, ForeignKey("artists.id"), nullable=False)
+    artist_id = Column(
+        Integer, ForeignKey("artists.id", ondelete="CASCADE"), nullable=False
+    )
 
     artist: "Artist" = relationship("Artist", back_populates="albums")
-    musics: List["Music"] = relationship("Music")
+    musics: List["Music"] = relationship(
+        "Music", back_populates="album", cascade="all, delete-orphan"
+    )
 
     def as_json(self) -> dict:
         return {

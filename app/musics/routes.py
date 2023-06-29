@@ -12,14 +12,15 @@ router = APIRouter()
 
 @router.post("/")
 async def add_music(schema: AddMusicSchema):
-    with async_session as session:
+    async with async_session as session:
         new_music = Music()
         new_music.name = schema.name
         new_music.lyrics = schema.lyrics
         new_music.language = schema.language
         new_music.artist_id = schema.artist_id
         new_music.album_id = schema.album_id
-        await session.add(new_music)
+        session.add(new_music)
+        await session.commit()
     return ORJSONResponse(new_music.as_json())
 
 
@@ -29,7 +30,19 @@ async def create_upload_file(music_id: int, file: UploadFile):
         await session.execute(
             update(Music).where(Music.id == music_id).values(clip=await file.read())
         )
-        return {"filename": file.filename}
+        await session.commit()
+    return {"filename": file.filename}
+
+
+@router.get("/{music_id}")
+async def get_music(music_id: int):
+    async with async_session as session:
+        album = (
+            (await session.execute(select(Music).where(Music.id == music_id)))
+            .scalars()
+            .first()
+        )
+    return ORJSONResponse(album.as_json(), status_code=200)
 
 
 @router.get("/")
@@ -39,7 +52,7 @@ async def get_musics():
     return ORJSONResponse([music.as_json() for music in musics], status_code=200)
 
 
-@router.post("/{music_id}")
+@router.put("/{music_id}")
 async def update_music(music_id: int, schema: UpdateMusicSchema):
     async with async_session as session:
         values = {
@@ -51,8 +64,10 @@ async def update_music(music_id: int, schema: UpdateMusicSchema):
         await session.execute(
             update(Music).where(Music.id == music_id).values(**values)
         )
+        await session.commit()
     return ORJSONResponse(
-        {"msg": "Music updated successfully", "status": 200}, status_code=200
+        {"id": music_id, "msg": "Music updated successfully", "status": 200},
+        status_code=200,
     )
 
 
@@ -60,6 +75,7 @@ async def update_music(music_id: int, schema: UpdateMusicSchema):
 async def delete_music(music_id: int):
     async with async_session as session:
         await session.execute(delete(Music).where(Music.id == music_id))
+        await session.commit()
     return ORJSONResponse(
         {"msg": "Music deleted successfully", "status": 200}, status_code=200
     )
